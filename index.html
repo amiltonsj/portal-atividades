@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Formulários | Organizado por Categoria</title>
+    <title>Catálogo de Formulários - Autônomo e Flexível</title>
     
     <style>
-        /* Estilos Básicos */
+        /* Estilos Básicos (Mantidos da Versão 2 para consistência visual) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -23,10 +23,8 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         .header h1 {
-            color: #1a73e8; /* Azul Google */
+            color: #1a73e8;
         }
-
-        /* Estilos do Agrupamento (Nova Seção) */
         .section-group {
             max-width: 1200px;
             margin: 0 auto 40px auto;
@@ -42,16 +40,14 @@
             margin-bottom: 20px;
             font-size: 1.8em;
         }
-        
-        /* Estilos do Container de Cards */
         .cards-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
         }
         .card {
-            background-color: #f8f9fa; /* Fundo leve para o card */
-            border-left: 5px solid #1a73e8; /* Destaque lateral */
+            background-color: #f8f9fa;
+            border-left: 5px solid #1a73e8;
             border-radius: 5px;
             padding: 20px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -95,11 +91,11 @@
 <body>
 
     <div class="header">
-        <h1>Catálogo de Formulários - Organizado</h1>
-        <p>Conteúdo agrupado por Categoria (Segmento, Série, Disciplina).</p>
+        <h1>Catálogo de Formulários - Gerado de Forma Autônoma</h1>
+        <p>A página agora identifica as colunas automaticamente, mesmo com mudanças de nome na planilha.</p>
     </div>
 
-    <div id="loading">Carregando e organizando os dados da planilha...</div>
+    <div id="loading">Carregando e mapeando os dados da planilha de forma inteligente...</div>
     <div id="main-content">
         </div>
 
@@ -108,33 +104,92 @@
         const mainContent = document.getElementById('main-content');
         const loadingElement = document.getElementById('loading');
 
-        // Função para converter o texto CSV em um array de objetos JavaScript (mantida do código anterior)
+        // Estrutura de palavras-chave para mapeamento autônomo
+        const FIELD_MAP = {
+            'title_key': ['titulo', 'nome', 'formulario', 'topico'],
+            'desc_key': ['descricao', 'resumo', 'detalhe', 'sobre'],
+            'link_key': ['link', 'url', 'acesso', 'endereco'],
+            // Priorizamos palavras-chave para o agrupamento
+            'category_key': ['categoria', 'segmento', 'serie', 'disciplina', 'ano'] 
+        };
+        
+        // Variável global (ou facilmente acessível) para guardar o mapeamento dinâmico
+        let mappedKeys = {};
+
+        // Função auxiliar para limpar e normalizar o nome da coluna (mantida da Versão 3)
+        function normalizeHeader(header) {
+            let normalized = header.toLowerCase();
+            normalized = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            normalized = normalized.replace(/[^a-z0-9]+/g, '_');
+            normalized = normalized.replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+            return normalized;
+        }
+
+        // NOVO PASSO CHAVE: Mapear os cabeçalhos normalizados para as chaves internas
+        function mapHeaders(normalizedHeaders) {
+            const finalMap = {};
+            
+            // Itera sobre os campos que o script precisa ('title_key', 'link_key', etc.)
+            for (const internalKey in FIELD_MAP) {
+                const keywords = FIELD_MAP[internalKey];
+                
+                // Itera sobre os cabeçalhos REAIS do CSV
+                for (const header of normalizedHeaders) {
+                    // Verifica se o cabeçalho real contém alguma das palavras-chave
+                    if (keywords.some(keyword => header.includes(keyword))) {
+                        // Encontrou a melhor correspondência, define o nome real da coluna
+                        finalMap[internalKey] = header; 
+                        break; // Passa para a próxima chave interna (desc_key, link_key)
+                    }
+                }
+                
+                // Adiciona um fallback se não encontrar, para evitar erros
+                if (!finalMap[internalKey]) {
+                    console.warn(`Atenção: Não foi possível mapear a chave interna "${internalKey}". Verifique a planilha.`);
+                    finalMap[internalKey] = null;
+                }
+            }
+            return finalMap;
+        }
+
+
+        // parseCSV - Agora executa o mapeamento dos headers
         function parseCSV(csvText) {
             const lines = csvText.trim().split('\n');
             if (lines.length === 0) return [];
             
-            const headers = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
-            const data = [];
+            const rawHeaders = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
+            const normalizedHeaders = rawHeaders.map(normalizeHeader);
+            
+            // Armazena o mapeamento autônomo para uso nas outras funções
+            mappedKeys = mapHeaders(normalizedHeaders);
 
+            const data = [];
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].match(/(?:"[^"]*")|[^,]+/g) || [];
                 
                 const row = {};
-                for (let j = 0; j < headers.length; j++) {
+                for (let j = 0; j < normalizedHeaders.length; j++) {
                     const value = (values[j] || '').replace(/"/g, '').trim();
-                    row[headers[j]] = value;
+                    
+                    // Continua usando o header normalizado para preencher o objeto
+                    row[normalizedHeaders[j]] = value; 
                 }
                 data.push(row);
             }
             return data;
         }
-        
-        // NOVO: Função para agrupar os dados pela coluna 'Categoria'
+
+        // groupDataByCategory - Agora usa a chave de categoria mapeada dinamicamente
         function groupDataByCategory(data) {
+            // Se a chave não foi encontrada, retorna vazio para evitar erros
+            const categoryKey = mappedKeys.category_key;
+            if (!categoryKey) return {}; 
+            
             const grouped = {};
             data.forEach(item => {
-                // Usa a coluna "Categoria" (ou qualquer outra coluna que você queira agrupar)
-                const category = item['Categoria'] || 'Outros'; 
+                // Acessa o item usando o nome da coluna real que foi mapeado
+                const category = item[categoryKey] || 'Outros'; 
                 
                 if (!grouped[category]) {
                     grouped[category] = [];
@@ -144,12 +199,14 @@
             return grouped;
         }
 
-        // Função para criar o HTML de um Card (simplificada)
+        // createCard - Agora usa as chaves mapeadas dinamicamente
         function createCard(item) {
-            const titulo = item['Título do Formulário'] || 'Sem Título';
-            const descricao = item['Descrição'] || 'Sem descrição.';
-            const link = item['Link'];
+            // Acessa o objeto ITEM usando as chaves mapeadas (mappedKeys.title_key, etc.)
+            const titulo = item[mappedKeys.title_key] || 'Sem Título';
+            const descricao = item[mappedKeys.desc_key] || 'Sem descrição.';
+            const link = item[mappedKeys.link_key];
 
+            // Apenas renderiza se houver um link válido
             if (!link || !titulo) return '';
 
             return `
@@ -161,64 +218,61 @@
             `;
         }
         
-        // NOVO: Função para renderizar as seções agrupadas
+        // ... (renderGroupedForms e loadAndRenderForms mantidas com ajustes de referência)
+
         function renderGroupedForms(groupedData) {
             let htmlContent = '';
-            
-            // Itera sobre as categorias (chaves do objeto)
-            const categories = Object.keys(groupedData).sort(); // O sort() ajuda a ordenar as categorias
+            const categories = Object.keys(groupedData).sort();
             
             categories.forEach(category => {
                 const forms = groupedData[category];
                 
-                // Cria o HTML do título da seção/categoria
                 htmlContent += `
                     <div class="section-group">
                         <h2 class="section-title">${category}</h2>
                         <div class="cards-container">
                 `;
                 
-                // Adiciona os cards dentro do container da seção
                 forms.forEach(item => {
                     htmlContent += createCard(item);
                 });
                 
-                // Fecha o container de cards e a seção
                 htmlContent += `
                         </div>
                     </div>
                 `;
             });
 
-            mainContent.innerHTML = htmlContent || '<p class="header">Nenhum formulário encontrado na planilha.</p>';
+            mainContent.innerHTML = htmlContent || '<p class="header">Nenhum formulário encontrado ou erro de mapeamento. Verifique se as colunas Título, Descrição, Link e Categoria existem na planilha.</p>';
         }
 
 
-        // Função principal para buscar e renderizar os dados
         async function loadAndRenderForms() {
+            loadingElement.innerHTML = 'Carregando dados da planilha...';
             try {
+                // Tratativa de CORS/Fetch (mantida da Versão 2)
                 const response = await fetch(CSV_URL);
                 if (!response.ok) {
                     throw new Error('Erro ao carregar o CSV. Verifique se o link de publicação está correto.');
                 }
                 const csvText = await response.text();
                 
+                // 1. Parse & Mapeamento Autônomo
                 const formData = parseCSV(csvText);
                 
-                // Agrupa os dados
+                // 2. Agrupamento (usa o mapeamento)
                 const groupedData = groupDataByCategory(formData);
                 
-                // Renderiza o HTML agrupado
+                // 3. Renderização (usa o mapeamento)
                 loadingElement.style.display = 'none';
                 renderGroupedForms(groupedData);
 
             } catch (error) {
                 console.error("Erro na operação:", error);
-                loadingElement.innerHTML = `Falha ao carregar e processar os formulários: ${error.message}`;
+                loadingElement.innerHTML = `Falha crítica: ${error.message}`;
             }
         }
 
-        // Inicia o processo de carregamento
         loadAndRenderForms();
     </script>
 </body>
