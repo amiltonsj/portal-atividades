@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Formulários | Atualizado Automaticamente</title>
+    
+    <style>
+        /* Estilos Básicos para uma Aparência Limpa e Moderna */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .header h1 {
+            color: #007bff;
+        }
+        #cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        .card-title {
+            color: #333;
+            margin-top: 0;
+            font-size: 1.3em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .card-description {
+            color: #666;
+            flex-grow: 1;
+            margin-bottom: 15px;
+        }
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
+        }
+        .categoria-tag {
+            background-color: #e9f0ff;
+            color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .card-link {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+        }
+        .card-link:hover {
+            background-color: #0056b3;
+        }
+        #loading {
+            text-align: center;
+            font-style: italic;
+            color: #999;
+            padding: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Catálogo de Formulários Dinâmicos</h1>
+        <p>Esta lista é gerada automaticamente a partir da planilha!</p>
+    </div>
+
+    <div id="loading">Carregando dados da planilha...</div>
+    <div id="cards-container">
+        </div>
+
+    <script>
+        // O link de CSV que você forneceu
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRTEgth6P5phCU7uMcLEqDAZjowliEM29yE_Soxl_Lz7btM4RowkrJKloOon0K4shWitRz_pNld47ug/pub?output=csv';
+        const cardContainer = document.getElementById('cards-container');
+        const loadingElement = document.getElementById('loading');
+
+        // Função para converter o texto CSV em um array de objetos JavaScript
+        function parseCSV(csvText) {
+            // Separa por linha. O slice(1) remove o cabeçalho
+            const lines = csvText.trim().split('\n');
+            if (lines.length === 0) return [];
+            
+            // O replace remove as aspas duplas, um problema comum em exportações CSV
+            const headers = lines[0].replace(/"/g, '').split(',');
+            const data = [];
+
+            // Itera pelas linhas de dados, começando pela segunda (índice 1)
+            for (let i = 1; i < lines.length; i++) {
+                // A regex é mais robusta para lidar com CSV que contém vírgulas dentro dos campos
+                const values = lines[i].match(/(?:"[^"]*")|[^,]+/g) || [];
+                
+                // Cria o objeto para a linha
+                const row = {};
+                for (let j = 0; j < headers.length; j++) {
+                    // Limpa as aspas do valor e adiciona ao objeto
+                    const value = (values[j] || '').replace(/"/g, '').trim();
+                    row[headers[j].trim()] = value;
+                }
+                data.push(row);
+            }
+            return data;
+        }
+
+        // Função para criar o HTML de um Card
+        function createCard(item) {
+            // Desestruturando os nomes de colunas que você forneceu
+            const titulo = item['Título do Formulário'] || 'Sem Título';
+            const descricao = item['Descrição'] || 'Sem descrição fornecida.';
+            const link = item['Link'];
+            const categoria = item['Categoria'] || 'Geral';
+
+            // Verifica se o link é válido antes de criar o card
+            if (!link || !titulo) return '';
+
+            return `
+                <div class="card">
+                    <div>
+                        <h3 class="card-title">${titulo}</h3>
+                        <p class="card-description">${descricao}</p>
+                    </div>
+                    <div class="card-footer">
+                        <span class="categoria-tag">${categoria}</span>
+                        <a href="${link}" target="_blank" class="card-link">Acessar</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Função principal para buscar e renderizar os dados
+        async function loadAndRenderForms() {
+            try {
+                // 1. Fetch: Busca o conteúdo da URL
+                const response = await fetch(CSV_URL);
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar o CSV. Verifique se o link de publicação está correto.');
+                }
+                const csvText = await response.text();
+                
+                // 2. Parse: Converte o CSV em objetos JS
+                const formData = parseCSV(csvText);
+                
+                // 3. Render: Gera o HTML
+                let htmlContent = '';
+                formData.forEach(item => {
+                    htmlContent += createCard(item);
+                });
+
+                // Remove a mensagem de carregamento e insere o conteúdo
+                loadingElement.style.display = 'none';
+                cardContainer.innerHTML = htmlContent || '<p>Nenhum formulário encontrado na planilha.</p>';
+
+            } catch (error) {
+                console.error("Erro na operação:", error);
+                loadingElement.innerHTML = `Falha ao carregar os formulários: ${error.message}`;
+            }
+        }
+
+        // Inicia o processo de carregamento
+        loadAndRenderForms();
+    </script>
+</body>
+</html>
