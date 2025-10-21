@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo de Formulários | Atualizado Automaticamente</title>
+    <title>Catálogo de Formulários | Organizado por Categoria</title>
     
     <style>
-        /* Estilos Básicos para uma Aparência Limpa e Moderna */
+        /* Estilos Básicos */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -23,69 +23,66 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         .header h1 {
-            color: #007bff;
+            color: #1a73e8; /* Azul Google */
         }
-        #cards-container {
+
+        /* Estilos do Agrupamento (Nova Seção) */
+        .section-group {
+            max-width: 1200px;
+            margin: 0 auto 40px auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .section-title {
+            color: #1a73e8;
+            border-bottom: 3px solid #e6e6e6;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        /* Estilos do Container de Cards */
+        .cards-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
         }
         .card {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa; /* Fundo leve para o card */
+            border-left: 5px solid #1a73e8; /* Destaque lateral */
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         .card-title {
             color: #333;
             margin-top: 0;
-            font-size: 1.3em;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            font-size: 1.2em;
         }
         .card-description {
             color: #666;
+            font-size: 0.9em;
             flex-grow: 1;
             margin-bottom: 15px;
         }
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed #eee;
-        }
-        .categoria-tag {
-            background-color: #e9f0ff;
-            color: #007bff;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
         .card-link {
-            background-color: #007bff;
+            display: inline-block;
+            background-color: #1a73e8;
             color: white;
             padding: 8px 15px;
             text-decoration: none;
             border-radius: 5px;
             font-size: 0.9em;
-            transition: background-color 0.2s;
-        }
-        .card-link:hover {
-            background-color: #0056b3;
+            text-align: center;
         }
         #loading {
             text-align: center;
@@ -98,98 +95,126 @@
 <body>
 
     <div class="header">
-        <h1>Catálogo de Formulários Dinâmicos</h1>
-        <p>Esta lista é gerada automaticamente a partir da planilha!</p>
+        <h1>Catálogo de Formulários - Organizado</h1>
+        <p>Conteúdo agrupado por Categoria (Segmento, Série, Disciplina).</p>
     </div>
 
-    <div id="loading">Carregando dados da planilha...</div>
-    <div id="cards-container">
+    <div id="loading">Carregando e organizando os dados da planilha...</div>
+    <div id="main-content">
         </div>
 
     <script>
-        // O link de CSV que você forneceu
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRTEgth6P5phCU7uMcLEqDAZjowliEM29yE_Soxl_Lz7btM4RowkrJKloOon0K4shWitRz_pNld47ug/pub?output=csv';
-        const cardContainer = document.getElementById('cards-container');
+        const mainContent = document.getElementById('main-content');
         const loadingElement = document.getElementById('loading');
 
-        // Função para converter o texto CSV em um array de objetos JavaScript
+        // Função para converter o texto CSV em um array de objetos JavaScript (mantida do código anterior)
         function parseCSV(csvText) {
-            // Separa por linha. O slice(1) remove o cabeçalho
             const lines = csvText.trim().split('\n');
             if (lines.length === 0) return [];
             
-            // O replace remove as aspas duplas, um problema comum em exportações CSV
-            const headers = lines[0].replace(/"/g, '').split(',');
+            const headers = lines[0].replace(/"/g, '').split(',').map(h => h.trim());
             const data = [];
 
-            // Itera pelas linhas de dados, começando pela segunda (índice 1)
             for (let i = 1; i < lines.length; i++) {
-                // A regex é mais robusta para lidar com CSV que contém vírgulas dentro dos campos
                 const values = lines[i].match(/(?:"[^"]*")|[^,]+/g) || [];
                 
-                // Cria o objeto para a linha
                 const row = {};
                 for (let j = 0; j < headers.length; j++) {
-                    // Limpa as aspas do valor e adiciona ao objeto
                     const value = (values[j] || '').replace(/"/g, '').trim();
-                    row[headers[j].trim()] = value;
+                    row[headers[j]] = value;
                 }
                 data.push(row);
             }
             return data;
         }
+        
+        // NOVO: Função para agrupar os dados pela coluna 'Categoria'
+        function groupDataByCategory(data) {
+            const grouped = {};
+            data.forEach(item => {
+                // Usa a coluna "Categoria" (ou qualquer outra coluna que você queira agrupar)
+                const category = item['Categoria'] || 'Outros'; 
+                
+                if (!grouped[category]) {
+                    grouped[category] = [];
+                }
+                grouped[category].push(item);
+            });
+            return grouped;
+        }
 
-        // Função para criar o HTML de um Card
+        // Função para criar o HTML de um Card (simplificada)
         function createCard(item) {
-            // Desestruturando os nomes de colunas que você forneceu
             const titulo = item['Título do Formulário'] || 'Sem Título';
-            const descricao = item['Descrição'] || 'Sem descrição fornecida.';
+            const descricao = item['Descrição'] || 'Sem descrição.';
             const link = item['Link'];
-            const categoria = item['Categoria'] || 'Geral';
 
-            // Verifica se o link é válido antes de criar o card
             if (!link || !titulo) return '';
 
             return `
                 <div class="card">
-                    <div>
-                        <h3 class="card-title">${titulo}</h3>
-                        <p class="card-description">${descricao}</p>
-                    </div>
-                    <div class="card-footer">
-                        <span class="categoria-tag">${categoria}</span>
-                        <a href="${link}" target="_blank" class="card-link">Acessar</a>
-                    </div>
+                    <h3 class="card-title">${titulo}</h3>
+                    <p class="card-description">${descricao}</p>
+                    <a href="${link}" target="_blank" class="card-link">Acessar Formulário</a>
                 </div>
             `;
         }
+        
+        // NOVO: Função para renderizar as seções agrupadas
+        function renderGroupedForms(groupedData) {
+            let htmlContent = '';
+            
+            // Itera sobre as categorias (chaves do objeto)
+            const categories = Object.keys(groupedData).sort(); // O sort() ajuda a ordenar as categorias
+            
+            categories.forEach(category => {
+                const forms = groupedData[category];
+                
+                // Cria o HTML do título da seção/categoria
+                htmlContent += `
+                    <div class="section-group">
+                        <h2 class="section-title">${category}</h2>
+                        <div class="cards-container">
+                `;
+                
+                // Adiciona os cards dentro do container da seção
+                forms.forEach(item => {
+                    htmlContent += createCard(item);
+                });
+                
+                // Fecha o container de cards e a seção
+                htmlContent += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            mainContent.innerHTML = htmlContent || '<p class="header">Nenhum formulário encontrado na planilha.</p>';
+        }
+
 
         // Função principal para buscar e renderizar os dados
         async function loadAndRenderForms() {
             try {
-                // 1. Fetch: Busca o conteúdo da URL
                 const response = await fetch(CSV_URL);
                 if (!response.ok) {
                     throw new Error('Erro ao carregar o CSV. Verifique se o link de publicação está correto.');
                 }
                 const csvText = await response.text();
                 
-                // 2. Parse: Converte o CSV em objetos JS
                 const formData = parseCSV(csvText);
                 
-                // 3. Render: Gera o HTML
-                let htmlContent = '';
-                formData.forEach(item => {
-                    htmlContent += createCard(item);
-                });
-
-                // Remove a mensagem de carregamento e insere o conteúdo
+                // Agrupa os dados
+                const groupedData = groupDataByCategory(formData);
+                
+                // Renderiza o HTML agrupado
                 loadingElement.style.display = 'none';
-                cardContainer.innerHTML = htmlContent || '<p>Nenhum formulário encontrado na planilha.</p>';
+                renderGroupedForms(groupedData);
 
             } catch (error) {
                 console.error("Erro na operação:", error);
-                loadingElement.innerHTML = `Falha ao carregar os formulários: ${error.message}`;
+                loadingElement.innerHTML = `Falha ao carregar e processar os formulários: ${error.message}`;
             }
         }
 
